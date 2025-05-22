@@ -1,167 +1,246 @@
 import React, { useContext, useEffect, useState } from 'react';
-import {  ImageBackground, StyleSheet, Text, TextInput, View, Button, Alert, FlatList } from 'react-native';
+import { StyleSheet, Text, TextInput, View, Button, Alert, FlatList, Modal, Picker, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { TareasContext } from '../context/TareasContext';
-import CheckBox from '@react-native-community/checkbox';
 
 export const HomeScreen = () => {
-
-  /* const image = require('../assets/graphic-2d-colorful-wallpaper-with-grainy-gradients.jpg'); */
-  
   const navigation = useNavigation();
   const { agregarTarea1, completarTarea, devolverTareasActivas } = useContext(TareasContext);
   const { status, logout, userId } = useContext(AuthContext);
 
   const [tareas, setTareas] = useState([]);
   const [nombreTarea, setNombreTarea] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [tareaAEditar, setTareaAEditar] = useState(null);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nuevaCategoria, setNuevaCategoria] = useState("");
 
-  useEffect(() => {  //useEffect cambiado
+  useEffect(() => {
     if (status === 'unauthenticated') {
       navigation.navigate('Login');
     } else {
       const fetchTareas = async () => {
         const tareasActivas = await devolverTareasActivas();
-        console.log('Tareas activas obtenidas en HomeScreen:', tareasActivas);  // Debugging log
         setTareas(tareasActivas);
       };
       fetchTareas();
     }
-  }, [status, userId, navigation]);//agrego userID
+  }, [status, userId, navigation]);
 
   const handleLogout = () => {
     logout();
   };
 
-const eliminarTarea = async (tareaId) => {
-  Alert.alert(
-    'Confirmar',
-    '¿Estás seguro de que quieres completar esta tarea?',
-    [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sí', onPress: async () => {
-          await completarTarea(tareaId);
-          const tareasActualizadas = await devolverTareasActivas(); 
-          setTareas(tareasActualizadas);
-          setNombreTarea("");
-        }
-      },
-    ],
-    { cancelable: true }
-  );
-};
+  const abrirModalEditar = (tarea) => {
+    setTareaAEditar(tarea);
+    setNuevoNombre(tarea.nombre);
+    setNuevaCategoria(tarea.categoria || "");
+    setModalVisible(true);
+  };
 
-  const handleSubmit = async () => { //cambie el handleSubmit, async
+  const guardarEdicion = async () => {
+    if (nuevoNombre.trim() !== "") {
+      await fetch(`https://6657b1355c361705264597cb.mockapi.io/Tarea/${tareaAEditar.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nuevoNombre, categoria: nuevaCategoria }),
+      });
+      const tareasActualizadas = await devolverTareasActivas();
+      setTareas(tareasActualizadas);
+      setModalVisible(false);
+      setTareaAEditar(null);
+      setNuevoNombre("");
+      setNuevaCategoria("");
+    }
+  };
+
+  const eliminarTarea = async (tareaId) => {
+    Alert.alert(
+      'Confirmar',
+      '¿Estás seguro de que quieres completar esta tarea?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sí', onPress: async () => {
+            await completarTarea(tareaId);
+            const tareasActualizadas = await devolverTareasActivas(); 
+            setTareas(tareasActualizadas);
+            setNombreTarea("");
+          }
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!nombreTarea.trim() || !categoria.trim()) {
+      alert('Ingrese nombre y categoría');
+      return;
+    }
     const nuevaTarea = {
       nombre: nombreTarea,
-      descripcion: "Esto es una descripcion",
       idUsuario: userId,
-      estaActiva: true
+      estaActiva: true,
+      categoria
     };
     await agregarTarea1(nuevaTarea);
     const tareasActualizadas = await devolverTareasActivas();
     setTareas(tareasActualizadas);
     setNombreTarea("");
+    setCategoria("");
   };
 
-  return (
- /*    <View style={styles.container1}>
-<ImageBackground source={image} resizeMode="cover" style={styles.image}> */
+  // Agrupa tareas por categoría existente
+  const categoriasExistentes = [...new Set(tareas.map(t => t.categoria).filter(Boolean))];
+  const secciones = categoriasExistentes.map(cat => ({
+    title: cat,
+    data: tareas.filter(t => t.categoria === cat)
+  }));
 
-
-<View style={styles.container}>
-      <FlatList
-        data={tareas}
-        keyExtractor={(item) => item.id.toString()} // Convertir a string el ID
-        renderItem={({ item }) => (
-          <View style={styles.tareaContainer}>
-            <Text style={styles.tareaText}>{item.nombre}</Text>
-            <Button
-  title="Completar tarea" onPress={() => eliminarTarea(item.id)} color='green'
-/>
-          </View>
-          
-        )}
-        contentContainerStyle={styles.scrollContainer}
-        
-      />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Escriba su tarea..."
-          value={nombreTarea}
-          onChangeText={setNombreTarea}
+ return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <View style={styles.container}>
+        <SectionList
+          sections={secciones}
+          keyExtractor={(item) => item.id.toString()}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.categoriaHeader}>{title}</Text>
+          )}
+         renderItem={({ item }) => (
+  <View style={styles.tareaContainer}>
+    <Text style={styles.tareaText}>{item.nombre}</Text>
+    <View style={styles.tareaButtonsRow}>
+      <View style={styles.tareaButtonWrapper}>
+        <Button
+          title="✓"
+          onPress={() => eliminarTarea(item.id)}
+          color="#4CAF50"
         />
-        <Button title="Agregar Tarea" onPress={handleSubmit} />
-        <View style={{ height: 20 }} />
-        <Button title="Logout" onPress={handleLogout} color="red" />
       </View>
+      <View style={styles.tareaButtonWrapper}>
+        <Button
+          title="✎"
+          onPress={() => abrirModalEditar(item)}
+          color="#FFA500"
+        />
       </View>
-/* 
-      </ImageBackground>
-    </View> */
-
-
-
+    </View>
+  </View>
+)}
+          contentContainerStyle={styles.scrollContainer}
+        />
+        <View style={styles.inputBox}>
+          <TextInput
+            style={styles.input}
+            placeholder="Escriba su tarea"
+            value={nombreTarea}
+            onChangeText={setNombreTarea}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Escriba la categoría"
+            value={categoria}
+            onChangeText={setCategoria}
+          />
+          <Button title="Agregar Tarea" onPress={handleSubmit} />
+          <View style={{ height: 16 }} />
+          <Button title="Ver Tareas Completadas" onPress={() => navigation.navigate('CompletedTasks')} />
+          <View style={{ height: 16 }} />
+          <Button title="Logout" onPress={handleLogout} color="red" />
+        </View>
+        {/* Quitamos los botones de afuera del inputBox */}
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          {/* ...modal code... */}
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container1: {
-     flex: 1,
-    justifyContent: 'center', 
-  },
-  image: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-
   container: {
     flex: 1,
-    padding: 2,
-    marginTop: 15,
+    backgroundColor: '#fff'
   },
   scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 200,
+    paddingBottom: 20,
   },
-  tareaContainer: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    textAlign: "center"
+   tareaContainer: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    marginVertical: 6,
+    marginHorizontal: 10,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    flexDirection: 'row', // <--- Cambia a row
+    alignItems: 'center',  // <--- Centra verticalmente
+    justifyContent: 'space-between', // <--- Espacia nombre y botones
   },
   tareaText: {
-    fontSize: 18,
-    textAlign: "center",
-    borderWidth: 1,
-    borderColor: "green"
-
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'left', // <--- Alinea a la izquierda
+    flex: 1,           // <--- Ocupa el espacio disponible
+    marginBottom: 0,   // <--- Elimina el margen inferior
+  },
+  tareaButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  tareaButtonWrapper: {
+    marginHorizontal: 4,
+    width: 40,
+  },
+  inputBox: {
+    backgroundColor: '#e0e0e0',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
   inputContainer: {
-   /*  position: 'absolute', */
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-    backgroundColor: ""
-   
+    display: 'none', // Ocultamos el viejo inputContainer
   },
   input: {
-    height: 40,
-    borderColor: "green",
+    backgroundColor: '#fff',
+    borderRadius: 6,
     borderWidth: 1,
+    borderColor: '#bdbdbd',
+    padding: 10,
     marginBottom: 10,
-    paddingHorizontal: 10,
-    textAlign: "center"
+    fontSize: 16,
   },
-  boton:  {
-   width: 1, // Anchura del botón
-  height: 2040215, // Altura del botón
-  color: "red"
-}
+  categoriaHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    backgroundColor: '#e0e0e0',
+    padding: 5,
+    marginTop: 10,
+    marginBottom: 5,
+    borderRadius: 5,
+    textAlign: 'center'
+  },
 });
 
 export default HomeScreen;

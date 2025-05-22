@@ -7,6 +7,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { useContext } from 'react';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { TareaProvider } from './context/TareasContext';
+import CompletedTasksScreen from './screens/CompletedTasksScreen';
 
 const Stack = createStackNavigator();
 
@@ -15,53 +16,38 @@ const image = {uri: 'https://legacy.reactjs.org/logo-og.png'};
 function AppNavigator(){
   const { status } = useContext(AuthContext)
 
-  
-
-return (
-  
-  <Stack.Navigator
-  
-  
-    screenOptions={{
-      cardStyle: {
-        backgroundColor: 'white'
-      }
-    }}
-  >
-   
-   {status !== 'authenticated' ? (
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        cardStyle: {
+          backgroundColor: 'white'
+        }
+      }}
+    >
+      {status !== 'authenticated' ? (
         <>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="SoloRegister" component={SoloRegister} />
         </>
       ) : (
-        <Stack.Screen name="Home" component={HomeScreen} />
-        
+        <>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="CompletedTasks" component={CompletedTasksScreen} options={{ title: 'Tareas Completadas' }} />
+        </>
       )}
     </Stack.Navigator>
-  
-
   );
 }
 
-
 export default function App() {
   return (
-   
-
-
-<AuthProvider>
- <TareaProvider>
-
- <NavigationContainer>
-   <AppNavigator />
- </NavigationContainer>
-
- </TareaProvider>
-</AuthProvider>
-
-
-
+    <AuthProvider>
+      <TareaProvider>
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </TareaProvider>
+    </AuthProvider>
   );
 }
 
@@ -82,17 +68,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000c0',
   },
 });
-
-
-
-
-/* export default function App() {
-  return (
-<NavigationContainer>
-  <Stack.Navigator initialRouteName='RegisterLogin'>
-    <Stack.Screen name="RegisterLogin" component={RegisterLoginScreen}/>
-    <Stack.Screen name="Home" component={HomeScreen}/>
-  </Stack.Navigator>
-  </NavigationContainer>
-  );
-} */
