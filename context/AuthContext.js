@@ -6,7 +6,6 @@ export const AuthContext = createContext()
 export const AuthProvider = ({ children }) => {
     const [status, setStatus] = useState('checking');
     const [userId, setUserId] = useState(null);
-    const [esLogin, setEsLogin] = useState(false);
 
     useEffect(() => {
         const cargarEstadoAuth = async () => {
@@ -36,8 +35,7 @@ export const AuthProvider = ({ children }) => {
             console.log('users: ', users);
             
             const user = users.find( element => element.username === username && element.password === password)
-            const numeroId = user.id
-            console.log('Numero de id: ', numeroId);
+            console.log('Numero de id: ', user.id);
             console.log('user: ', user);
             if (user){
                 return user
@@ -46,10 +44,8 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.log(error)
-           /*  console.error('Error en el fetch: ', error) */
           
         }
-        // https://6656578f9f970b3b36c51233.mockapi.io/api/v1/usuarios
     }
 
     
@@ -71,7 +67,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
     
-        // https://6656578f9f970b3b36c51233.mockapi.io/api/v1/usuarios
     
 
     const register = async (username, email, password) => {

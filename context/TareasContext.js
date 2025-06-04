@@ -1,6 +1,5 @@
 import React, { createContext, useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const TareasContext = createContext();
 

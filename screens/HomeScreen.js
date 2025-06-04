@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Button, Alert, FlatList, Modal, Picker, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
+import { StyleSheet, Text, TextInput, View, Button, Alert, Modal, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { TareasContext } from '../context/TareasContext';
@@ -92,7 +92,6 @@ export const HomeScreen = () => {
     setCategoria("");
   };
 
-  // Agrupa tareas por categoría existente
   const categoriasExistentes = [...new Set(tareas.map(t => t.categoria).filter(Boolean))];
   const secciones = categoriasExistentes.map(cat => ({
     title: cat,
@@ -154,14 +153,12 @@ export const HomeScreen = () => {
           <View style={{ height: 16 }} />
           <Button title="Logout" onPress={handleLogout} color="red" />
         </View>
-        {/* Quitamos los botones de afuera del inputBox */}
         <Modal
           visible={modalVisible}
           transparent
           animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
-          {/* ...modal code... */}
         </Modal>
       </View>
     </KeyboardAvoidingView>
