@@ -6,66 +6,55 @@ export const AuthContext = createContext()
 export const AuthProvider = ({ children }) => {
     const [status, setStatus] = useState('checking');
     const [userId, setUserId] = useState(null);
+    const [userRol, setUserRol] = useState(null); // NUEVO
 
-    useEffect(() => {
-        const cargarEstadoAuth = async () => {
-            const isAuthenticated = await AsyncStorage.getItem('isAuthenticated');
-
-            if (isAuthenticated === 'true') {
-                setStatus('authenticated');
-                const numerdoId = await AsyncStorage.getItem('userId');
-                if (numerdoId) {
-                    setUserId(numerdoId);
-                    console.log('Numero de id: ', numerdoId);
-                } else {
-                    console.warn('No se encontro userId en AsyncStorage');
-                }
-            } else {
-                setStatus('unauthenticated');
-            }
-        };
-
-        cargarEstadoAuth();
-    }, []);
+useEffect(() => {
+    const cargarEstadoAuth = async () => {
+        const isAuthenticated = await AsyncStorage.getItem('isAuthenticated');
+        if (isAuthenticated === 'true') {
+            setStatus('authenticated');
+            const storedUserId = await AsyncStorage.getItem('userId');
+            const storedUserRol = await AsyncStorage.getItem('userRol');
+            if (storedUserId) setUserId(storedUserId);
+            if (storedUserRol) setUserRol(storedUserRol);
+        } else {
+            setStatus('unauthenticated');
+        }
+    };
+    cargarEstadoAuth();
+}, []);
 
     const esLogeable = async (username, password) => {
         try {
-            const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Usuario');
-            const users = await respuesta.json()
-            console.log('users: ', users);
-            
-            const user = users.find( element => element.username === username && element.password === password)
-            console.log('Numero de id: ', user.id);
-            console.log('user: ', user);
-            if (user){
-                return user
-            }else{
-                return undefined
-            }
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Usuario');
+            const users = await respuesta.json();
+            const user = users.find(element => element.username === username && element.password === password);
+            return user ? user : undefined;
         } catch (error) {
-            console.log(error)
-          
-        }
-    }
-
-    
-    const login = async (username, password) => {
-        try {
-            const user = await esLogeable(username, password);
-            if (user) {
-                await AsyncStorage.setItem('isAuthenticated', 'true');
-                setStatus('authenticated');
-                await AsyncStorage.setItem('userId', user.id);
-                setUserId(user.id);
-            } else {
-                console.error('El usuario no existe')
-                setStatus('unauthenticated');
-            }
-        } catch (error) {
-            console.error('Error en el login: ', error);
-            alert('Error en el login');
+            console.log(error);
         }
     };
+
+const login = async (username, password) => {
+    try {
+        const user = await esLogeable(username, password);
+        if (user) {
+            await AsyncStorage.setItem('isAuthenticated', 'true');
+            await AsyncStorage.setItem('userId', user.id);
+            await AsyncStorage.setItem('userRol', user.rol || 'user');
+            setStatus('authenticated');
+            setUserId(user.id);
+            setUserRol(user.rol || 'user');
+            return true; // Login exitoso
+        } else {
+            setStatus('unauthenticated');
+            return false; // Login fallido
+        }
+    } catch (error) {
+        alert('Error en el login');
+        return false;
+    }
+};
     
     
 
@@ -74,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const esLogin = await esLogeable(username, email, password);
             if (!esLogin) {
-                const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Usuario', {
+                const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Usuario', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -106,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     }
    
  return (
-    <AuthContext.Provider value={{userId, status, login, register, logout}}>
+    <AuthContext.Provider value={{userId, status, userRol, login, register, logout}}>
         { children }
     </AuthContext.Provider>
  )

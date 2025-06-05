@@ -18,7 +18,7 @@ export default function CompletedTasksScreen() {
     const handleBorrar = (id) => {
         Alert.alert(
             'Borrar tarea',
-            '¿Estás seguro de que quieres borrar esta tarea completada?',
+            '¿Estás seguro de que quieres borrar definitivamente esta tarea completada?',
             [
                 { text: 'Cancelar', style: 'cancel' },
                 { text: 'Borrar', style: 'destructive', onPress: async () => {

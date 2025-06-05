@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Button, Alert, Modal, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
+import { StyleSheet, Text, TextInput, View, Button, Alert, Modal, SectionList, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { TareasContext } from '../context/TareasContext';
 
 export const HomeScreen = () => {
   const navigation = useNavigation();
-  const { agregarTarea1, completarTarea, devolverTareasActivas } = useContext(TareasContext);
-  const { status, logout, userId } = useContext(AuthContext);
+  const { agregarTarea1, completarTarea, devolverTareasActivas, borrarTarea, resetearTodasLasTareas } = useContext(TareasContext);
+  const { status, logout, userId, userRol } = useContext(AuthContext);
 
   const [tareas, setTareas] = useState([]);
   const [nombreTarea, setNombreTarea] = useState("");
@@ -29,9 +29,16 @@ export const HomeScreen = () => {
     }
   }, [status, userId, navigation]);
 
-  const handleLogout = () => {
-    logout();
-  };
+const handleLogout = () => {
+  Alert.alert(
+    'Cerrar sesión',
+    '¿Estás seguro de que quieres cerrar sesión?',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sí', style: 'destructive', onPress: () => logout() }
+    ]
+  );
+};
 
   const abrirModalEditar = (tarea) => {
     setTareaAEditar(tarea);
@@ -42,7 +49,7 @@ export const HomeScreen = () => {
 
   const guardarEdicion = async () => {
     if (nuevoNombre.trim() !== "") {
-      await fetch(`https://6657b1355c361705264597cb.mockapi.io/Tarea/${tareaAEditar.id}`, {
+      await fetch(`https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea/${tareaAEditar.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nuevoNombre, categoria: nuevaCategoria }),
@@ -74,6 +81,22 @@ export const HomeScreen = () => {
     );
   };
 
+const handleBorrarDefinitivo = (id) => {
+    Alert.alert(
+      'Borrar tarea',
+      '¿Estás seguro de que quieres borrar definitivamente esta tarea?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Borrar', style: 'destructive', onPress: async () => {
+            await borrarTarea(id); // <-- Esto borra en la API
+            const tareasActualizadas = await devolverTareasActivas();
+            setTareas(tareasActualizadas);
+          }
+        }
+      ]
+    );
+};
+
   const handleSubmit = async () => {
     if (!nombreTarea.trim() || !categoria.trim()) {
       alert('Ingrese nombre y categoría');
@@ -98,7 +121,7 @@ export const HomeScreen = () => {
     data: tareas.filter(t => t.categoria === cat)
   }));
 
- return (
+  return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -111,27 +134,34 @@ export const HomeScreen = () => {
           renderSectionHeader={({ section: { title } }) => (
             <Text style={styles.categoriaHeader}>{title}</Text>
           )}
-         renderItem={({ item }) => (
-  <View style={styles.tareaContainer}>
-    <Text style={styles.tareaText}>{item.nombre}</Text>
-    <View style={styles.tareaButtonsRow}>
-      <View style={styles.tareaButtonWrapper}>
-        <Button
-          title="✓"
-          onPress={() => eliminarTarea(item.id)}
-          color="#4CAF50"
-        />
-      </View>
-      <View style={styles.tareaButtonWrapper}>
-        <Button
-          title="✎"
-          onPress={() => abrirModalEditar(item)}
-          color="#FFA500"
-        />
-      </View>
-    </View>
-  </View>
-)}
+          renderItem={({ item }) => (
+            <View style={styles.tareaContainer}>
+              <Text style={styles.tareaText}>{item.nombre}</Text>
+              <View style={styles.tareaButtonsRow}>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="✓"
+                    onPress={() => eliminarTarea(item.id)}
+                    color="#4CAF50"
+                  />
+                </View>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="✎"
+                    onPress={() => abrirModalEditar(item)}
+                    color="#FFA500"
+                  />
+                </View>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="🗑️"
+                    onPress={() => handleBorrarDefinitivo(item.id)}
+                    color="#D32F2F"
+                  />
+                </View>
+              </View>
+            </View>
+          )}
           contentContainerStyle={styles.scrollContainer}
         />
         <View style={styles.inputBox}>
@@ -152,6 +182,25 @@ export const HomeScreen = () => {
           <Button title="Ver Tareas Completadas" onPress={() => navigation.navigate('CompletedTasks')} />
           <View style={{ height: 16 }} />
           <Button title="Logout" onPress={handleLogout} color="red" />
+          {userRol === 'admin' && (
+            <>
+              <View style={{ height: 16 }} />
+              <Button
+                title="Restablecer TODAS las tareas"
+                color="red"
+                onPress={() => {
+                  Alert.alert(
+                    'Confirmar',
+                    '¿Seguro que quieres borrar todas las tareas?',
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      { text: 'Sí', style: 'destructive', onPress: resetearTodasLasTareas }
+                    ]
+                  );
+                }}
+              />
+            </>
+          )}
         </View>
         <Modal
           visible={modalVisible}
@@ -159,6 +208,47 @@ export const HomeScreen = () => {
           animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
+          <View style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)'
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              width: '80%'
+            }}>
+              <Text style={{ fontSize: 18, marginBottom: 10 }}>Editar tarea</Text>
+              <TextInput
+                value={nuevoNombre}
+                onChangeText={setNuevoNombre}
+                style={{
+                  borderWidth: 1,
+                  borderColor: 'green',
+                  padding: 8,
+                  marginBottom: 10,
+                  borderRadius: 5
+                }}
+              />
+              <TextInput
+                value={nuevaCategoria}
+                onChangeText={setNuevaCategoria}
+                placeholder="Categoría"
+                style={{
+                  borderWidth: 1,
+                  borderColor: 'green',
+                  padding: 8,
+                  marginBottom: 10,
+                  borderRadius: 5
+                }}
+              />
+              <Button title="Guardar" onPress={guardarEdicion} />
+              <View style={{ height: 10 }} />
+              <Button title="Cancelar" color="red" onPress={() => setModalVisible(false)} />
+            </View>
+          </View>
         </Modal>
       </View>
     </KeyboardAvoidingView>
@@ -173,7 +263,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingBottom: 20,
   },
-   tareaContainer: {
+  tareaContainer: {
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
     marginVertical: 6,
@@ -184,17 +274,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
-    flexDirection: 'row', // <--- Cambia a row
-    alignItems: 'center',  // <--- Centra verticalmente
-    justifyContent: 'space-between', // <--- Espacia nombre y botones
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   tareaText: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#222',
-    textAlign: 'left', // <--- Alinea a la izquierda
-    flex: 1,           // <--- Ocupa el espacio disponible
-    marginBottom: 0,   // <--- Elimina el margen inferior
+    textAlign: 'left',
+    flex: 1,
+    marginBottom: 0,
   },
   tareaButtonsRow: {
     flexDirection: 'row',
@@ -217,7 +307,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
   },
   inputContainer: {
-    display: 'none', // Ocultamos el viejo inputContainer
+    display: 'none',
   },
   input: {
     backgroundColor: '#fff',
@@ -239,5 +329,3 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
 });
-
-export default HomeScreen;

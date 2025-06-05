@@ -11,7 +11,7 @@ export const TareaProvider = ({ children }) => {
 
     const fetchTareas = async () => {
         try {
-            const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Tarea');
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea');
             const data = await respuesta.json();
             const tareasFiltradas = data.filter(tarea => tarea.idUsuario === userId);
             setTareas(tareasFiltradas);
@@ -30,7 +30,7 @@ export const TareaProvider = ({ children }) => {
 
     const agregarTarea1 = async (nuevaTarea) => {
         try {
-            const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Tarea', {
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ export const TareaProvider = ({ children }) => {
 
     const devolverTareasActivas = async () => {
         try {
-            const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Tarea');
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea');
             if (!respuesta.ok) {
                 throw new Error('Error al obtener las tareas');
             }
@@ -70,7 +70,7 @@ export const TareaProvider = ({ children }) => {
 
     const devolverTareasCompletadas = async () => {
         try {
-            const respuesta = await fetch('https://6657b1355c361705264597cb.mockapi.io/Tarea');
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea');
             if (!respuesta.ok) {
                 throw new Error('Error al obtener las tareas');
             }
@@ -85,7 +85,7 @@ export const TareaProvider = ({ children }) => {
 
     const completarTarea = async (tareaId) => {
         try {
-            const respuesta = await fetch(`https://6657b1355c361705264597cb.mockapi.io/Tarea/${tareaId}`, {
+            const respuesta = await fetch(`https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea/${tareaId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,20 +110,37 @@ export const TareaProvider = ({ children }) => {
     };
 
     const borrarTarea = async (tareaId) => {
-    try {
-        const respuesta = await fetch(`https://6657b1355c361705264597cb.mockapi.io/Tarea/${tareaId}`, {
-            method: 'DELETE'
-        });
-        if (respuesta.ok) {
-            setTareas(prevTareas => prevTareas.filter(tarea => tarea.id !== tareaId));
-            setTareasCompletadas(prev => prev.filter(tarea => tarea.id !== tareaId));
-        } else {
-            alert('Error al borrar la tarea');
+        try {
+            const respuesta = await fetch(`https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea/${tareaId}`, {
+                method: 'DELETE'
+            });
+            if (respuesta.ok) {
+                setTareas(prevTareas => prevTareas.filter(tarea => tarea.id !== tareaId));
+                setTareasCompletadas(prev => prev.filter(tarea => tarea.id !== tareaId));
+            } else {
+                alert('Error al borrar la tarea');
+            }
+        } catch (error) {
+            console.error('Error al borrar la tarea: ', error);
         }
-    } catch (error) {
-        console.error('Error al borrar la tarea: ', error);
-    }
-};
+    };
+
+    const resetearTodasLasTareas = async () => {
+        try {
+            const respuesta = await fetch('https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea');
+            const tareas = await respuesta.json();
+            await Promise.all(tareas.map(tarea =>
+                fetch(`https://6840e302d48516d1d359aa21.mockapi.io/TareaApp/Tarea/${tarea.id}`, {
+                    method: 'DELETE'
+                })
+            ));
+            setTareas([]);
+            setTareasActivas([]);
+            setTareasCompletadas([]);
+        } catch (error) {
+            alert('Error al restablecer las tareas');
+        }
+    };
 
     return (
         <TareasContext.Provider value={{
@@ -135,6 +152,7 @@ export const TareaProvider = ({ children }) => {
             agregarTarea1,
             completarTarea,
             borrarTarea,
+            resetearTodasLasTareas,
             fetchTareas
         }}>
             {children}

@@ -24,17 +24,17 @@ function AppNavigator(){
         }
       }}
     >
-      {status !== 'authenticated' ? (
-        <>
-          <Stack.Screen name="Login" component={Login} />
-          <Stack.Screen name="SoloRegister" component={SoloRegister} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="CompletedTasks" component={CompletedTasksScreen} options={{ title: 'Tareas Completadas' }} />
-        </>
-      )}
+{status !== 'authenticated' ? (
+  <>
+    <Stack.Screen name="Login" component={Login} />
+    <Stack.Screen name="SoloRegister" component={SoloRegister} />
+  </>
+) : (
+  <>
+    <Stack.Screen name="Home" component={HomeScreen} />
+    <Stack.Screen name="CompletedTasks" component={CompletedTasksScreen} options={{ title: 'Tareas Completadas' }} />
+  </>
+)}
     </Stack.Navigator>
   );
 }
