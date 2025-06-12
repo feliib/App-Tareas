@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ImageBackground, Image, View,Text, Button,  StyleSheet,TextInput, Switch, tab} from "react-native";
 import { useNavigation, NavigationContainer} from "@react-navigation/native";
-import { AuthContext } from '../context/AuthContext';
-import { TareaProvider } from '../context/TareasContext';
+import { AuthContext } from '../frontend-app/context/AuthContext';
+import { TareaProvider } from '../frontend-app/context/TareasContext';
 
 
 export default function RegisterLoginScreen() {
