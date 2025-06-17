@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
-import { TareasContext } from '../frontend-app/context/TareasContext';
+import { TareasContext } from '../context/TareasContext';
 
 export default function CompletedTasksScreen() {
     const { devolverTareasCompletadas, borrarTarea } = useContext(TareasContext);

@@ -1,5 +1,6 @@
 {
   "expo": {
+    "entryPoint": "./App.js",
     "name": "TareaApp",
     "slug": "TareaApp",
     "version": "1.0.0",

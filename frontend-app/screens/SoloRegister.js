@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {ImageBackground, View,Text, Button,  StyleSheet,TextInput, Switch, tab} from "react-native";
 import { useNavigation, NavigationContainer} from "@react-navigation/native";
-import { AuthContext } from '../frontend-app/context/AuthContext';
+import { AuthContext } from '../context/AuthContext';
 
 export default function SoloRegister() {
 

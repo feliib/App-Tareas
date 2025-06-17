@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Button, Alert, FlatList, Modal, Picker, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
-import { AuthContext } from '../frontend-app/context/AuthContext';
+import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { TareasContext } from '../frontend-app/context/TareasContext';
+import { TareasContext } from '../context/TareasContext';
 
 export const HomeScreen = () => {
   const navigation = useNavigation();
