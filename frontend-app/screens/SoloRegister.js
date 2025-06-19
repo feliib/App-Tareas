@@ -34,15 +34,6 @@ export default function SoloRegister() {
     }
   }, [status, navigation])
 
-/*   const HandleRegister = () => {
-    if (email === "admin" && password === "admin") {
-      alert(`${nombre} se ha registrado correctamente`);
-      navigation.navigate("Home");
-    } else {
-      alert("Login Fallado");
-    }
-  }; */
-
 
   const IrALogin = () => {
     setEsLogin(true);

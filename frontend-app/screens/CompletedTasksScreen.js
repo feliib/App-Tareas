@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
 import { TareasContext } from '../context/TareasContext';
 
 export default function CompletedTasksScreen() {
-    const { devolverTareasCompletadas, borrarTarea } = useContext(TareasContext);
+    const { devolverTareasCompletadas, borrarTarea, editarTarea } = useContext(TareasContext);
     const [tareasCompletadas, setTareasCompletadas] = useState([]);
 
     useEffect(() => {
@@ -13,6 +13,11 @@ export default function CompletedTasksScreen() {
     const fetchCompletadas = async () => {
         const completadas = await devolverTareasCompletadas();
         setTareasCompletadas(completadas);
+    };
+
+    const handleRestaurar = async (id) => {
+        await editarTarea(id, { estaActiva: true });
+        fetchCompletadas();
     };
 
     const handleBorrar = (id) => {
@@ -38,7 +43,14 @@ export default function CompletedTasksScreen() {
                 renderItem={({ item }) => (
                     <View style={styles.tareaContainer}>
                         <Text style={styles.tareaText}>{item.nombre}</Text>
-                        <Button title="Borrar" color="red" onPress={() => handleBorrar(item.id)} />
+                        <View style={styles.buttonRow}>
+                            <View style={styles.buttonWrapper}>
+                                <Button title="Restaurar" color="#4CAF50" onPress={() => handleRestaurar(item.id)} />
+                            </View>
+                            <View style={styles.buttonWrapper}>
+                                <Button title="Borrar" color="#D32F2F" onPress={() => handleBorrar(item.id)} />
+                            </View>
+                        </View>
                     </View>
                 )}
             />
@@ -51,5 +63,13 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
     tareaContainer: { padding: 10, borderBottomWidth: 1, borderBottomColor: '#ccc' },
     tareaText: { fontSize: 18, fontWeight: 'bold' },
-    descripcion: { fontSize: 14, color: '#666' }
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: 8,
+    },
+    buttonWrapper: {
+        marginLeft: 8,
+        flex: 1,
+    },
 });

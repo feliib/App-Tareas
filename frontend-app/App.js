@@ -1,21 +1,18 @@
-import {StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Login from './screens/Login';
 import SoloRegister from './screens/SoloRegister';
-import { HomeScreen } from './screens/HomeScreen';
+import HomeScreen from './screens/HomeScreen';
 import { useContext } from 'react';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { TareaProvider } from './context/TareasContext';
 import CompletedTasksScreen from './screens/CompletedTasksScreen';
-import React from 'react';
 
 const Stack = createStackNavigator();
 
-const image = {uri: 'https://legacy.reactjs.org/logo-og.png'};
-
-function AppNavigator(){
-  const { status } = useContext(AuthContext)
+function AppNavigator() {
+  const { status } = useContext(AuthContext);
 
   return (
     <Stack.Navigator

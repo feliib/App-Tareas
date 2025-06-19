@@ -1,14 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Button, Alert, FlatList, Modal, Picker, SectionList,  KeyboardAvoidingView, Platform  } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { StyleSheet, Text, TextInput, View, Button, Alert, SectionList, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { TareasContext } from '../context/TareasContext';
 
-export const HomeScreen = () => {
+const HomeScreen = () => {
   const navigation = useNavigation();
-  const { agregarTarea1, completarTarea, devolverTareasActivas } = useContext(TareasContext);
-  const { status, logout, userId } = useContext(AuthContext);
-
+  const { agregarTarea1, completarTarea, devolverTareasActivas, resetearTodasLasTareas, borrarTarea, editarTarea } = useContext(TareasContext);
+  const { status, logout, userId, userRol } = useContext(AuthContext);
   const [tareas, setTareas] = useState([]);
   const [nombreTarea, setNombreTarea] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -17,17 +17,23 @@ export const HomeScreen = () => {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      navigation.navigate('Login');
-    } else {
-      const fetchTareas = async () => {
-        const tareasActivas = await devolverTareasActivas();
-        setTareas(tareasActivas);
-      };
-      fetchTareas();
-    }
-  }, [status, userId, navigation]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (status === 'unauthenticated') {
+        navigation.navigate('Login');
+      } else {
+        const fetchTareas = async () => {
+          const tareasActivas = await devolverTareasActivas();
+          const tareasConId = tareasActivas.map(t => ({
+            ...t,
+            id: t._id || t.id
+          }));
+          setTareas(tareasConId);
+        };
+        fetchTareas();
+      }
+    }, [status, userId, navigation])
+  );
 
   const handleLogout = () => {
     logout();
@@ -42,17 +48,28 @@ export const HomeScreen = () => {
 
   const guardarEdicion = async () => {
     if (nuevoNombre.trim() !== "") {
-      await fetch(`https://6657b1355c361705264597cb.mockapi.io/Tarea/${tareaAEditar.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nuevoNombre, categoria: nuevaCategoria }),
-      });
-      const tareasActualizadas = await devolverTareasActivas();
-      setTareas(tareasActualizadas);
-      setModalVisible(false);
-      setTareaAEditar(null);
-      setNuevoNombre("");
-      setNuevaCategoria("");
+      try {
+        await editarTarea(tareaAEditar.id, {
+          nombre: nuevoNombre,
+          categoria: nuevaCategoria
+        });
+        const tareasActualizadas = await devolverTareasActivas();
+        const tareasConId = tareasActualizadas
+          .filter(t => t && (t._id || t.id))
+          .map(t => ({
+            ...t,
+            id: t._id || t.id
+          }));
+        setTareas(tareasConId);
+        setModalVisible(false);
+        setTareaAEditar(null);
+        setNuevoNombre("");
+        setNuevaCategoria("");
+      } catch {
+        alert('Error al editar la tarea');
+      }
+    } else {
+      alert('El nombre no puede estar vacío');
     }
   };
 
@@ -64,9 +81,14 @@ export const HomeScreen = () => {
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Sí', onPress: async () => {
             await completarTarea(tareaId);
-            const tareasActualizadas = await devolverTareasActivas(); 
-            setTareas(tareasActualizadas);
-            setNombreTarea("");
+            const tareasActualizadas = await devolverTareasActivas();
+            const tareasConId = tareasActualizadas
+              .filter(t => t && (t._id || t.id))
+              .map(t => ({
+                ...t,
+                id: t._id || t.id
+              }));
+            setTareas(tareasConId);
           }
         },
       ],
@@ -79,27 +101,35 @@ export const HomeScreen = () => {
       alert('Ingrese nombre y categoría');
       return;
     }
-    const nuevaTarea = {
-      nombre: nombreTarea,
-      idUsuario: userId,
-      estaActiva: true,
-      categoria
-    };
-    await agregarTarea1(nuevaTarea);
-    const tareasActualizadas = await devolverTareasActivas();
-    setTareas(tareasActualizadas);
-    setNombreTarea("");
-    setCategoria("");
+    try {
+      const nuevaTarea = {
+        nombre: nombreTarea,
+        categoria,
+        estaActiva: true
+      };
+      await agregarTarea1(nuevaTarea);
+      const tareasActualizadas = await devolverTareasActivas();
+      const tareasConId = tareasActualizadas
+        .filter(t => t && (t._id || t.id))
+        .map(t => ({
+          ...t,
+          id: t._id || t.id
+        }));
+      setTareas(tareasConId);
+      setNombreTarea("");
+      setCategoria("");
+    } catch {
+      alert('Error al crear tarea');
+    }
   };
 
-  // Agrupa tareas por categoría existente
   const categoriasExistentes = [...new Set(tareas.map(t => t.categoria).filter(Boolean))];
   const secciones = categoriasExistentes.map(cat => ({
     title: cat,
     data: tareas.filter(t => t.categoria === cat)
   }));
 
- return (
+  return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -112,27 +142,54 @@ export const HomeScreen = () => {
           renderSectionHeader={({ section: { title } }) => (
             <Text style={styles.categoriaHeader}>{title}</Text>
           )}
-         renderItem={({ item }) => (
-  <View style={styles.tareaContainer}>
-    <Text style={styles.tareaText}>{item.nombre}</Text>
-    <View style={styles.tareaButtonsRow}>
-      <View style={styles.tareaButtonWrapper}>
-        <Button
-          title="✓"
-          onPress={() => eliminarTarea(item.id)}
-          color="#4CAF50"
-        />
-      </View>
-      <View style={styles.tareaButtonWrapper}>
-        <Button
-          title="✎"
-          onPress={() => abrirModalEditar(item)}
-          color="#FFA500"
-        />
-      </View>
-    </View>
-  </View>
-)}
+          renderItem={({ item }) => (
+            <View style={styles.tareaContainer}>
+              <Text style={styles.tareaText}>{item.nombre}</Text>
+              <View style={styles.tareaButtonsRow}>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="✓"
+                    onPress={() => eliminarTarea(item.id)}
+                    color="#4CAF50"
+                  />
+                </View>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="✎"
+                    onPress={() => abrirModalEditar(item)}
+                    color="#FFA500"
+                  />
+                </View>
+                <View style={styles.tareaButtonWrapper}>
+                  <Button
+                    title="❌"
+                    onPress={() => {
+                      Alert.alert(
+                        'Eliminar tarea',
+                        '¿Estás seguro de que quieres eliminar esta tarea?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          { text: 'Eliminar', style: 'destructive', onPress: async () => {
+                              await borrarTarea(item.id);
+                              const tareasActualizadas = await devolverTareasActivas();
+                              const tareasConId = tareasActualizadas
+                                .filter(t => t && (t._id || t.id))
+                                .map(t => ({
+                                  ...t,
+                                  id: t._id || t.id
+                                }));
+                              setTareas(tareasConId);
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                    color="#D32F2F"
+                  />
+                </View>
+              </View>
+            </View>
+          )}
           contentContainerStyle={styles.scrollContainer}
         />
         <View style={styles.inputBox}>
@@ -152,16 +209,73 @@ export const HomeScreen = () => {
           <View style={{ height: 16 }} />
           <Button title="Ver Tareas Completadas" onPress={() => navigation.navigate('CompletedTasks')} />
           <View style={{ height: 16 }} />
+          {userRol === 'admin' && (
+            <Button
+              title="Borrar todas las tareas"
+              color="red"
+              onPress={() => {
+                Alert.alert(
+                  'Confirmar',
+                  '¿Seguro que quieres borrar todas las tareas?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Sí', style: 'destructive', onPress: async () => {
+                        await resetearTodasLasTareas();
+                        const tareasActualizadas = await devolverTareasActivas();
+                        const tareasConId = tareasActualizadas
+                          .filter(t => t && (t._id || t.id))
+                          .map(t => ({
+                            ...t,
+                            id: t._id || t.id
+                          }));
+                        setTareas(tareasConId);
+                      }
+                    }
+                  ]
+                );
+              }}
+            />
+          )}
+          <View style={{ height: 16 }} />
           <Button title="Logout" onPress={handleLogout} color="red" />
         </View>
-        {/* Quitamos los botones de afuera del inputBox */}
         <Modal
           visible={modalVisible}
           transparent
           animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
-          {/* ...modal code... */}
+          <View style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.4)'
+          }}>
+            <View style={{
+              backgroundColor: '#fff',
+              padding: 24,
+              borderRadius: 12,
+              width: '80%',
+              elevation: 4
+            }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>Editar tarea</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nuevo nombre"
+                value={nuevoNombre}
+                onChangeText={setNuevoNombre}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Nueva categoría"
+                value={nuevaCategoria}
+                onChangeText={setNuevaCategoria}
+              />
+              <Button title="Guardar cambios" onPress={guardarEdicion} />
+              <View style={{ height: 8 }} />
+              <Button title="Cancelar" color="red" onPress={() => setModalVisible(false)} />
+            </View>
+          </View>
         </Modal>
       </View>
     </KeyboardAvoidingView>
@@ -176,7 +290,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingBottom: 20,
   },
-   tareaContainer: {
+  tareaContainer: {
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
     marginVertical: 6,
@@ -187,17 +301,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
-    flexDirection: 'row', // <--- Cambia a row
-    alignItems: 'center',  // <--- Centra verticalmente
-    justifyContent: 'space-between', // <--- Espacia nombre y botones
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'space-between', 
   },
   tareaText: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#222',
-    textAlign: 'left', // <--- Alinea a la izquierda
-    flex: 1,           // <--- Ocupa el espacio disponible
-    marginBottom: 0,   // <--- Elimina el margen inferior
+    textAlign: 'left',
+    flex: 1,           
+    marginBottom: 0,   
   },
   tareaButtonsRow: {
     flexDirection: 'row',
@@ -218,9 +332,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
-  },
-  inputContainer: {
-    display: 'none', // Ocultamos el viejo inputContainer
   },
   input: {
     backgroundColor: '#fff',
