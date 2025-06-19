@@ -19,7 +19,8 @@ Agregar tarea: Escribe el nombre y la categoría de la tarea y presiona "Agregar
 Editar tarea: Presiona el botón ✎ junto a la tarea para modificar su nombre o categoría.
 Completar tarea: Presiona el botón ✓ para marcar la tarea como completada.
 Ver tareas completadas: Presiona "Ver Tareas Completadas" para acceder al historial de tareas finalizadas.
-Eliminar tarea completada: En la pantalla de tareas completadas, puedes borrar tareas definitivamente.
+Eliminar tarea completada: En la pantalla de tareas completadas, puedes bo
+rrar tareas definitivamente.
 Logout: Presiona "Logout" para cerrar sesión.
 
 Requisitos: 
